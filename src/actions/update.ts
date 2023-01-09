@@ -8,7 +8,7 @@ import { Extlist } from '../models/extlist';
 import { mkdir } from '../utils';
 import minimist from "minimist";
 
-export async function update(redownload: boolean) {
+async function update(redownload: boolean) {
   console.log(`region: ${RegionID}`);
   const outPath = mkdir('data', RegionID);
 

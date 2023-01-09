@@ -10,7 +10,7 @@ export async function downloadBc(
   bcPath: string, binPath: string,
   extlist: string, entry: ExtlistEntry, redownload: boolean
 ): Promise<boolean> {
-  const key = `${entry.isCards ? 'cards' : 'mons'}_${padStart(entry.id.toString(), 3, '0')}`;
+  const key = `${entry.isCards ? 'cards' : 'mons'}_${padStart(entry.id.toString(), 4, '0')}`;
 
   if (!redownload && existsSync(join(binPath, `${key}.bin`))) {return false;}
 

@@ -3,20 +3,14 @@ const path = require('path');
 const minimist = require('minimist');
 const webgl = require('gl');
 const sharp = require('sharp');
-const { spine } = require('./spine-webgl');
+const { spine } = require('../spine-webgl');
 
-async function main(args) {
-  const parsedArgs = minimist(args);
-  if (parsedArgs._.length !== 1) {
-    console.log("usage: renderer.js [skeleton JSON] [--single] [--out-dir=<output directory>]");
-    return false;
-  }
-  const dataDir = path.dirname(parsedArgs._[0]);
-  const animName = path.basename(parsedArgs._[0], path.extname(parsedArgs._[0]));
-  const skeletonJson = fs.readFileSync(parsedArgs._[0]).toString();
-  const atlasText = fs.readFileSync(parsedArgs._[0].replace(/\.json$/, '.atlas')).toString();
-  const renderSingle = !!parsedArgs["single"];
-  const outDir = parsedArgs["out-dir"] == null ? path.resolve('.') : String(parsedArgs["out-dir"]);
+async function render(jsonPath, outDir, renderSingle) {
+  const dataDir = path.dirname(jsonPath);
+  const animName = path.basename(jsonPath, path.extname(jsonPath));
+  const skeletonJson = fs.readFileSync(jsonPath).toString();
+  const atlasText = fs.readFileSync(jsonPath.replace(/\.json$/, '.atlas')).toString();
+  const outDir = outDir == null ? path.resolve('.') : String(outDir);
   const FRAME_RATE = 30;
 
   const canvas = {
@@ -143,11 +137,26 @@ async function main(args) {
       animationState.update(delta);
     }
   }
+}
+
+
+export async function main(args) {
+  const parsedArgs = minimist(args, {
+    boolean: ['single', 'help'],
+    string: ['out-dir']
+  });
+  if (parsedArgs._.length !== 1 || parsedArgs.help) {
+    console.log("usage: renderer.js [skeleton JSON] [--single] [--out-dir=<output directory>]");
+    return parsedArgs.help;
+  }
+
+  if (fs.existsSync(parsedArgs._[0]) && fs.lstatSync(parsedArgs._[0]).isDirectory()) {
+    for (const file of fs.readdirSync(parsedArgs._[0])) {
+      await render(path.join(parsedArgs._[0], file), parsedArgs['out-dir'], parsedArgs.single)
+    }
+  } else {
+    await render(parsedArgs._[0], parsedArgs['out-dir'], parsedArgs.single)
+  }
 
   return true;
 }
-
-main(process.argv.slice(2)).then((ok) => process.exitCode = ok ? 0 : 1).catch((err) => {
-  console.error('\nunexpected error: ', err);
-  process.exit(1);
-});
