@@ -18,8 +18,7 @@
   "scripts": {
     "start": "ts-node .",
     "update": "ts-node . update",
-    "extract": "ts-node . extract",
-    "inspect": "ts-node . inspect"
+    "extract": "ts-node . extract"
   },
   "dependencies": {
     "axios": "0.21.1",

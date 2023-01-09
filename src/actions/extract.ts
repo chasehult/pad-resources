@@ -133,18 +133,16 @@ async function convertSpineModel(
   }
 }
 
-interface Args {
-  out: string;
-  _: string[];
-}
-
 export async function main(args: string[]) {
-  const parsedArgs = minimist(args) as Args;
-  if (parsedArgs._.length === 0) {
+  const parsedArgs = minimist(args, {
+    string: ['out'],
+    boolean: ['help']
+  });
+  if (parsedArgs._.length === 0 || parsedArgs.help) {
     console.log(
       "usage: pad-resources extract [--out <output directory>] <bin files>..."
     );
-    return false;
+    return parsedArgs.help;
   }
 
   const files: string[] = [];
