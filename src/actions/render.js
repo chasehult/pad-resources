@@ -10,12 +10,11 @@ async function render(jsonPath, outDir, renderSingle) {
   const animName = path.basename(jsonPath, path.extname(jsonPath));
   const skeletonJson = fs.readFileSync(jsonPath).toString();
   const atlasText = fs.readFileSync(jsonPath.replace(/\.json$/, '.atlas')).toString();
-  const outDir = outDir == null ? path.resolve('.') : String(outDir);
   const FRAME_RATE = 30;
 
   const canvas = {
-    width: 640, height: 640,
-    clientWidth: 640, clientHeight: 640,
+    width: 640, height: 366,
+    clientWidth: 640, clientHeight: 366,
   };
   const gl = webgl(canvas.width, canvas.height);
   if (!gl) {
@@ -104,7 +103,7 @@ async function render(jsonPath, outDir, renderSingle) {
   const renderer = new spine.SceneRenderer(canvas, gl, false);
 
   renderer.camera.position.x = 0;
-  renderer.camera.position.y = 640 / 6;
+  renderer.camera.position.y = 150;
 
   async function render(outFile) {
     gl.clearColor(0, 0, 0, 0);
@@ -143,19 +142,26 @@ async function render(jsonPath, outDir, renderSingle) {
 export async function main(args) {
   const parsedArgs = minimist(args, {
     boolean: ['single', 'help'],
-    string: ['out-dir']
+    string: ['out']
   });
   if (parsedArgs._.length !== 1 || parsedArgs.help) {
-    console.log("usage: renderer.js [skeleton JSON] [--single] [--out-dir=<output directory>]");
+    console.log("usage: renderer.js [skeleton JSON] [--single] [--out=<output directory>]");
     return parsedArgs.help;
   }
 
+  const files = [];
   if (fs.existsSync(parsedArgs._[0]) && fs.lstatSync(parsedArgs._[0]).isDirectory()) {
     for (const file of fs.readdirSync(parsedArgs._[0])) {
-      await render(path.join(parsedArgs._[0], file), parsedArgs['out-dir'], parsedArgs.single)
+      if (file.endsWith('.json')) {
+        files.push(path.join(parsedArgs._[0], file));
+      }
     }
   } else {
-    await render(parsedArgs._[0], parsedArgs['out-dir'], parsedArgs.single)
+    files.push(parsedArgs._[0]);
+  }
+
+  for (const file of files) {
+    await render(file, parsedArgs.out ?? '.', parsedArgs.single)
   }
 
   return true;

@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "es2015",
     "module": "commonjs",
-    "strict": true,
+    "strict": false,
     "esModuleInterop": true,
     "rootDir": "src",
     "forceConsistentCasingInFileNames": true,
@@ -12,6 +12,7 @@
     "strictNullChecks": true,
     "suppressImplicitAnyIndexErrors": true,
     "noUnusedLocals": true,
-    "allowJs": true
+    "allowJs": true,
+    "noImplicitUseStrict": true
   }
 }

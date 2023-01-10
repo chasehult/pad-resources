@@ -22,7 +22,7 @@
     "render": "ts-node . render",
     "server": "node server.js",
     
-    "prerender": "curl https://cdn.jsdelivr.net/npm/@esotericsoftware/spine-webgl@4.0.27/dist/iife/spine-webgl.js > src/spine-webgl.js; echo '\nmodule.exports.spine = spine; '>> src/spine-webgl.js"
+    "prepare": "curl https://cdn.jsdelivr.net/npm/@esotericsoftware/spine-webgl@4.0.27/dist/iife/spine-webgl.js > src/spine-webgl.js; echo '\nmodule.exports.spine = spine; '>> src/spine-webgl.js"
   },
   "dependencies": {
     "axios": "0.21.1",

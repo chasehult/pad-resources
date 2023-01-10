@@ -16,7 +16,7 @@ export async function downloadBc(
 
   let data: Buffer;
   if (redownload || !existsSync(join(binPath, `${key}.bc`))) {
-    data = (await Axios.get(`${key}.bc`, {
+    data = (await Axios.get(`${entry.isCards ? 'cards' : 'mons'}_${padStart(entry.id.toString(), 3, '0')}.bc`, {
       baseURL: extlist,
       responseType: 'arraybuffer',
     })).data;
