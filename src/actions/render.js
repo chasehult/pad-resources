@@ -6,12 +6,15 @@ const sharp = require('sharp');
 import { padStart } from 'lodash';
 const { spine } = require('../spine-webgl');
 
+const GIFEncoder = require('gif-encoder');
+const pngFileStream = require('png-file-stream');
+
 function toTsubakiName(oldName) {
   const mid = oldName.split('_')[1];
   return padStart(mid.toString(), 5, '0') + '.png';
 }
 
-async function render(jsonPath, outDir, renderSingle, forTsubaki) {
+async function render(jsonPath, outDir, renderSingle, forTsubaki, saveGif) {
   const dataDir = path.dirname(jsonPath);
   const animName = path.basename(jsonPath, path.extname(jsonPath));
   const skeletonJson = fs.readFileSync(jsonPath).toString();
@@ -123,8 +126,12 @@ async function render(jsonPath, outDir, renderSingle, forTsubaki) {
     const pixels = new Uint8Array(canvas.width * canvas.height * 4);
     gl.readPixels(0, 0, canvas.width, canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
     const img = sharp(pixels, { raw: { width: canvas.width, height: canvas.height, channels: 4 } });
-    await img.png().flip().toFile(outFile);
-    console.log(outFile);
+    if (outFile !== undefined) {
+      await img.png().flip().toFile(outFile);
+      console.log(outFile);
+    } else {
+      return img.flip().toBuffer();
+    }
   }
 
   if (renderSingle) {
@@ -135,27 +142,47 @@ async function render(jsonPath, outDir, renderSingle, forTsubaki) {
     }
   } else {
     const duration = animationState.getCurrent(0).animation.duration;
+    const padding = Math.ceil(duration * FRAME_RATE).toString().length;
     let time = 0;
     const delta = 1 / FRAME_RATE;
     let i = 0;
+    let gif;
+    if (saveGif) {
+      gif = new GIFEncoder(640, 388, {highWaterMark: 5 * 1024 * 1024});
+      gif.writeHeader();
+      gif.setFrameRate(FRAME_RATE);
+      gif.setRepeat(0);
+      gif.setQuality(10);
+      gif.pipe(fs.createWriteStream(path.join(outDir, `${animName}.gif`)));
+    }
     while (time < duration) {
       console.log(`${time.toFixed(2)}/${duration.toFixed(2)}`);
-      await renderImg(path.join(outDir, `${animName}-${i}.png`));
+      if (saveGif) {
+        gif.addFrame(await renderImg(), {});
+      } else {
+        let data = await renderImg(path.join(outDir, `${animName}-${padStart(i.toString(), padding, '0')}.png`));
+      }
       time += delta;
       i++;
       animationState.update(delta);
     }
+    if (saveGif) {gif.finish()};
+
+    /*
+    const stream = pngFileStream(path.join(outDir, `${animName}-*.png`))
+    .pipe(fs.createWriteStream({ repeat: 0, delay: delta * 1000, quality: 0 }))
+    .pipe(fs.createWriteStream(path.join(outDir, `${animName}.gif`)));*/
   }
 }
 
 
 export async function main(args) {
   const parsedArgs = minimist(args, {
-    boolean: ['single', 'help', 'for-tsubaki'],
+    boolean: ['single', 'help', 'for-tsubaki', 'gif'],
     string: ['out']
   });
   if (parsedArgs._.length !== 1 || parsedArgs.help) {
-    console.log("usage: renderer.js [skeleton JSON] [--single] [--for-tsubaki] [--out=<output directory>]");
+    console.log("usage: renderer.js [skeleton JSON] [--single] [--gif] [--for-tsubaki] [--out=<output directory>]");
     return parsedArgs.help;
   }
 
@@ -171,7 +198,7 @@ export async function main(args) {
   }
 
   for (const file of files) {
-    await render(file, parsedArgs.out ?? '.', parsedArgs.single, parsedArgs['for-tsubaki'])
+    await render(file, parsedArgs.out ?? '.', parsedArgs.single, parsedArgs['for-tsubaki'], parsedArgs.gif)
   }
 
   return true;
