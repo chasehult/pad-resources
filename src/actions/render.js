@@ -7,7 +7,6 @@ import { padStart } from 'lodash';
 const { spine } = require('../spine-webgl');
 
 const GIFEncoder = require('gif-encoder');
-const pngFileStream = require('png-file-stream');
 
 function toTsubakiName(oldName) {
   const mid = oldName.split('_')[1];
@@ -167,11 +166,6 @@ async function render(jsonPath, outDir, renderSingle, forTsubaki, saveGif) {
       animationState.update(delta);
     }
     if (saveGif) {gif.finish()};
-
-    /*
-    const stream = pngFileStream(path.join(outDir, `${animName}-*.png`))
-    .pipe(fs.createWriteStream({ repeat: 0, delay: delta * 1000, quality: 0 }))
-    .pipe(fs.createWriteStream(path.join(outDir, `${animName}.gif`)));*/
   }
 }
 
