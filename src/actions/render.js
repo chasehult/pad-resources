@@ -7,13 +7,14 @@ import { padStart } from 'lodash';
 const { spine } = require('../spine-webgl');
 
 const GIFEncoder = require('gif-encoder');
+import { spawnSync } from 'child_process';
 
 function toTsubakiName(oldName) {
   const mid = oldName.split('_')[1];
   return padStart(mid.toString(), 5, '0') + '.png';
 }
 
-async function render(jsonPath, outDir, renderSingle, forTsubaki, saveGif) {
+async function render(jsonPath, outDir, renderSingle, forTsubaki, formats) {
   const dataDir = path.dirname(jsonPath);
   const animName = path.basename(jsonPath, path.extname(jsonPath));
   const skeletonJson = fs.readFileSync(jsonPath).toString();
@@ -127,7 +128,7 @@ async function render(jsonPath, outDir, renderSingle, forTsubaki, saveGif) {
     const img = sharp(pixels, { raw: { width: canvas.width, height: canvas.height, channels: 4 } });
     if (outFile !== undefined) {
       await img.png().flip().toFile(outFile);
-      console.log(outFile);
+      //console.log(outFile);
     } else {
       return img.flip().toBuffer();
     }
@@ -146,7 +147,8 @@ async function render(jsonPath, outDir, renderSingle, forTsubaki, saveGif) {
     const delta = 1 / FRAME_RATE;
     let i = 0;
     let gif;
-    if (saveGif) {
+    let files = [];
+    if (formats.includes('gif')) {
       gif = new GIFEncoder(640, 388, {highWaterMark: 5 * 1024 * 1024});
       gif.writeHeader();
       gif.setFrameRate(FRAME_RATE);
@@ -156,28 +158,52 @@ async function render(jsonPath, outDir, renderSingle, forTsubaki, saveGif) {
     }
     while (time < duration) {
       console.log(`${time.toFixed(2)}/${duration.toFixed(2)}`);
-      if (saveGif) {
+      if (formats.includes('gif')) {
         gif.addFrame(await renderImg(), {});
-      } else {
-        let data = await renderImg(path.join(outDir, `${animName}-${padStart(i.toString(), padding, '0')}.png`));
+      }
+      if (formats.includes('mp4') || formats.includes('png')) {
+        let fp = path.join(outDir, `${animName}-${padStart(i.toString(), padding, '0')}.png`);
+        if (!fs.existsSync(fp)) {
+          files.push(fp);
+        }
+        let data = await renderImg(fp);
       }
       time += delta;
       i++;
       animationState.update(delta);
     }
-    if (saveGif) {gif.finish()};
+    if (formats.includes('gif')) {gif.finish()};
+    if (formats.includes('mp4')) {
+      const ffmpegArgs = ['-r', `${FRAME_RATE}`, 
+                          '-i', path.join(outDir, `${animName}-%0${padding}d.png`), 
+                          '-c:v', 'libx264', '-r', `${FRAME_RATE}`, '-pix_fmt', 'yuv420p',
+                          '-loglevel', 'error', '-hide_banner', '-y',
+                          path.join(outDir, `${animName}.mp4`)];
+      const ffmpeg = spawnSync('ffmpeg', ffmpegArgs, { stdio: ['pipe', 'pipe', 'inherit'] });
+
+      if (!formats.includes('png')) {files.map(fs.unlinkSync);}
+    }
   }
 }
 
 
 export async function main(args) {
   const parsedArgs = minimist(args, {
-    boolean: ['single', 'help', 'for-tsubaki', 'gif'],
-    string: ['out']
+    boolean: ['single', 'help', 'for-tsubaki'],
+    string: ['out', 'format']
   });
-  if (parsedArgs._.length !== 1 || parsedArgs.help) {
-    console.log("usage: renderer.js [skeleton JSON] [--single] [--gif] [--for-tsubaki] [--out=<output directory>]");
+  if (typeof parsedArgs.format !== 'object') {parsedArgs.format = [parsedArgs.format ?? 'png'];}
+
+  if (parsedArgs._.length !== 1 
+    || !parsedArgs.format.every((e) => ['gif','mp4','png', undefined].includes(e))
+    || parsedArgs.help) {
+    console.log("usage: renderer.js [skeleton JSON] [--single] [--format gif|mp4|png] [--for-tsubaki] [--out=<output directory>]");
     return parsedArgs.help;
+  }
+
+  if (parsedArgs.single && parsedArgs.format.some((e) => ['gif','mp4'].includes(e))) {
+    console.log("Only ");
+    return false;
   }
 
   const files = [];
@@ -192,7 +218,7 @@ export async function main(args) {
   }
 
   for (const file of files) {
-    await render(file, parsedArgs.out ?? '.', parsedArgs.single, parsedArgs['for-tsubaki'], parsedArgs.gif)
+    await render(file, parsedArgs.out ?? '.', parsedArgs.single, parsedArgs['for-tsubaki'], parsedArgs.format)
   }
 
   return true;
