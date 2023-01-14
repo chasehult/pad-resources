@@ -10,7 +10,7 @@ const { spine } = require('../spine-webgl');
 import { spawnSync, spawn } from 'child_process';
 const cliProgress = require('cli-progress');
 
-async function render(jsonPath, outDir, renderSingle, forTsubaki) {
+async function render(jsonPath: string, outDir: string, renderSingle: boolean, forTsubaki: boolean) {
   const dataDir = path.dirname(jsonPath);
   const skeletonJson = fs.readFileSync(jsonPath).toString();
   const atlasText = fs.readFileSync(jsonPath.replace(/\.json$/, '.atlas')).toString();
@@ -26,15 +26,15 @@ async function render(jsonPath, outDir, renderSingle, forTsubaki) {
   }
   gl.canvas = canvas;
 
-  global.HTMLCanvasElement = class { };
-  global.EventTarget = class { };
   global.WebGLRenderingContext = gl.constructor;
   spine.PolygonBatcher = class extends spine.PolygonBatcher {
-    begin(shader) {
+    begin(shader: any) {
+      console.log('shader');
+      console.log(typeof shader);
       super.begin(shader);
       this.__setAdditive();
     }
-    setBlendMode(srcBlend, dstBlend) {
+    setBlendMode(srcBlend: any, dstBlend: any) {
       super.setBlendMode(srcBlend, dstBlend);
       this.__setAdditive();
     }
@@ -49,7 +49,7 @@ async function render(jsonPath, outDir, renderSingle, forTsubaki) {
       }
     }
   };
-  spine.Shader.newColoredTextured = (context) => {
+  spine.Shader.newColoredTextured = (context: any) => {
     const vs = `
         attribute vec4 ${spine.Shader.POSITION};
         attribute vec4 ${spine.Shader.COLOR};
@@ -94,7 +94,7 @@ async function render(jsonPath, outDir, renderSingle, forTsubaki) {
     images.set(page.name, { width, height, data });
   }
   atlas.setTextures({
-    get: (name) => new spine.GLTexture(gl, images.get(name))
+    get: (name: any) => new spine.GLTexture(gl, images.get(name))
   });
 
   const skeletonData = new spine.SkeletonJson(new spine.AtlasAttachmentLoader(atlas)).readSkeletonData(skeletonJson);
@@ -109,7 +109,7 @@ async function render(jsonPath, outDir, renderSingle, forTsubaki) {
   renderer.camera.position.x = 0;
   renderer.camera.position.y = 150;
 
-  function renderImg(outFile) {
+  function renderImg(outFile: string | undefined) {
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);
     animationState.apply(skeleton);
@@ -182,21 +182,21 @@ async function render(jsonPath, outDir, renderSingle, forTsubaki) {
                         path.join(outDir, `${animName}.gif`)];
     
     await Promise.all([
-      new Promise((res, rej) => spawn('ffmpeg', hqGifFFmpegArgs).on('exit', (err) => {console.log(`${animName}_hq.gif`); res();})),
-      new Promise((res, rej) => spawn('ffmpeg', gifFFmpegArgs).on('exit', (err) => {console.log(`${animName}.gif`); res();})),
-      new Promise((res, rej) => fs.rm(cacheDir, { recursive: true, force: true }, (err) => res()))
+      new Promise<void>((res, rej) => spawn('ffmpeg', hqGifFFmpegArgs).on('exit', (err) => {console.log(`${animName}_hq.gif`); res();})),
+      new Promise<void>((res, rej) => spawn('ffmpeg', gifFFmpegArgs).on('exit', (err) => {console.log(`${animName}.gif`); res();})),
+      new Promise<void>((res, rej) => fs.rm(cacheDir, { recursive: true, force: true }, () => res()))
     ]);    
   }
 }
 
 
-export async function main(args) {
+export async function main(args: string[]) {
   const parsedArgs = minimist(args, {
     boolean: ['single', 'help', 'for-tsubaki']
   });
   
   if (parsedArgs._.length !== 2 || parsedArgs.help) {
-    console.log("usage: renderer.js <skeleton JSON> <output directory> [--single] [--new-only] [--for-tsubaki]");
+    console.log("usage: pad-resources render <skeleton JSON> <output directory> [--single] [--new-only] [--for-tsubaki]");
     return parsedArgs.help;
   }
 
