@@ -196,7 +196,7 @@ export async function main(args: string[]) {
   });
   
   if (parsedArgs._.length !== 2 || parsedArgs.help) {
-    console.log("usage: pad-resources render <skeleton JSON> <output directory> [--single] [--new-only] [--for-tsubaki]");
+    console.log("usage: pad-visual-media render <skeleton JSON> <output directory> [--single] [--new-only] [--for-tsubaki]");
     return parsedArgs.help;
   }
 

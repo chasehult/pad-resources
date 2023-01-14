@@ -143,7 +143,7 @@ export async function main(args: string[]) {
   });
 
   if (parsedArgs._.length !== 2 || parsedArgs.help) {
-    console.log("usage: pad-resources extract <bin file> <output directory> [--animated-only] [--new-only] [--for-tsubaki]");
+    console.log("usage: pad-visual-media extract <bin file> <output directory> [--animated-only] [--new-only] [--for-tsubaki]");
     return parsedArgs.help;
   }
 

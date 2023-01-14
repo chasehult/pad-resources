@@ -35,7 +35,7 @@ export async function main(args: string[]) {
   });
 
   if (parsedArgs._ .length !== 1 || parsedArgs.help) {
-    console.log("usage: pad-resources update <out directory> [--new-only] [--for-tsubaki]");
+    console.log("usage: pad-visual-media update <out directory> [--new-only] [--for-tsubaki]");
     return parsedArgs.help;
   }
   
