@@ -2,9 +2,9 @@ import { actionFactories } from './actions';
 
 function usage() {
   console.log(`
-usage: pad-resources update
-       pad-resources extract --out <out dir> <bin files>...
-       pad-resources render --bin <bin file> --out <out dir> [--single]
+usage: pad-resources update <out directory> [--new-only] [--for-tsubaki]
+       pad-resources extract <bin file> <output directory> [--animated-only] [--new-only] [--for-tsubaki]
+       pad-resources render <skeleton JSON> <output directory> [--single] [--new-only] [--for-tsubaki]
        pad-resources server
 `.trim());
   return false;

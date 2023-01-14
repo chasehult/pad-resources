@@ -181,10 +181,10 @@ async function render(jsonPath, outDir, renderSingle, forTsubaki) {
                         '-loglevel', 'error', '-hide_banner', '-y',
                         path.join(outDir, `${animName}.gif`)];
     
-    Promise.all([
-      spawn('ffmpeg', hqGifFFmpegArgs).on('exit', (code) => console.log(`${animName}_hq.gif`)),
-      spawn('ffmpeg', gifFFmpegArgs).on('exit', (code) => console.log(`${animName}.gif`)),
-      new Promise((res, rej) => fs.rm(cacheDir, { recursive: true, force: true }, (err) => err ? rej(err) : res()))
+    await Promise.all([
+      new Promise((res, rej) => spawn('ffmpeg', hqGifFFmpegArgs).on('exit', (err) => {console.log(`${animName}_hq.gif`); res();})),
+      new Promise((res, rej) => spawn('ffmpeg', gifFFmpegArgs).on('exit', (err) => {console.log(`${animName}.gif`); res();})),
+      new Promise((res, rej) => fs.rm(cacheDir, { recursive: true, force: true }, (err) => res()))
     ]);    
   }
 }
@@ -196,7 +196,7 @@ export async function main(args) {
   });
   
   if (parsedArgs._.length !== 2 || parsedArgs.help) {
-    console.log("usage: renderer.js <skeleton JSON> <output directory> [--single] [--for-tsubaki]");
+    console.log("usage: renderer.js <skeleton JSON> <output directory> [--single] [--new-only] [--for-tsubaki]");
     return parsedArgs.help;
   }
 
@@ -211,7 +211,15 @@ export async function main(args) {
     files.push(...glob.sync(parsedArgs._[0]));
   }
 
+  // TODO: Add progress bar for files
   for (const file of files) {
+    if (parsedArgs['new-only']) {
+      let base = path.basename(file, path.extname(file));
+      if (parsedArgs['for-tsubaki']
+       && fs.existsSync(path.join(parsedArgs._[1], `${padStart(base.split('_')[1].toString(), 5, '0')}_hq.gif`))) {continue;}
+      else if (!parsedArgs['for-tsubaki']
+       && fs.existsSync(path.join(parsedArgs._[1], `${base}_hq.gif`))) {continue;}
+    }
     await render(file, parsedArgs._[1], parsedArgs.single, parsedArgs['for-tsubaki'])
   }
 

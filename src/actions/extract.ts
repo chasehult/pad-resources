@@ -10,16 +10,19 @@ import { loadISA, loadISC } from "../models/spine";
 import { SpineAtlas } from "../models/spine-atlas";
 import { SpineSkeleton } from "../models/spine-skeleton";
 import { TEX } from "../models/tex";
+const cliProgress = require('cli-progress');
 
 function writeFile(out: string, name: string, data: Buffer) {
   fs.writeFileSync(join(out, name), data);
 }
 
-async function extract(in_file: string, out: string, animatedOnly: boolean) {
+async function extract(in_file: string, out: string, newOnly: boolean, animatedOnly: boolean) {
   const name = basename(in_file, extname(in_file));
   const buf = fs.readFileSync(in_file);
 
-  if (TEX.match(buf) && !animatedOnly) {
+  if (TEX.match(buf)) {
+    if (animatedOnly) {return;}
+    if (newOnly && fs.existsSync(join(out, `${name}.png`).toUpperCase())) {return;}
     const tex = TEX.load(buf);
     for (const entry of tex.entries) {
       console.log(entry.name);
@@ -28,6 +31,8 @@ async function extract(in_file: string, out: string, animatedOnly: boolean) {
     }
   } else if (BBIN.match(buf)) {
     const bbin = BBIN.load(buf);
+
+    if (newOnly && fs.existsSync(join(out, `${name}.json`))) {return;}
     const images = new Map<string, Buffer>();
     let isc: ISC | null = null;
     const isas: ISA[] = [];
@@ -134,27 +139,31 @@ async function convertSpineModel(
 
 export async function main(args: string[]) {
   const parsedArgs = minimist(args, {
-    boolean: ['help', 'animatedOnly']
+    boolean: ['help', 'animatedOnly', 'new-only', 'for-tsubaki']
   });
 
   if (parsedArgs._.length !== 2 || parsedArgs.help) {
-    console.log("usage: pad-resources extract <bin file> <output directory> [--animated-only]");
+    console.log("usage: pad-resources extract <bin file> <output directory> [--animated-only] [--new-only] [--for-tsubaki]");
     return parsedArgs.help;
   }
 
   const files = [];
   if (fs.existsSync(parsedArgs._[0]) && fs.lstatSync(parsedArgs._[0]).isDirectory()) {
     for (const file of fs.readdirSync(parsedArgs._[0])) {
-      if (file.endsWith('.json')) {
-        files.push(path.join(parsedArgs._[0], file));
+      if (file.endsWith('.bin')) {
+        files.push(join(parsedArgs._[0], file));
       }
     }
   } else {
     files.push(...glob.sync(parsedArgs._[0]));
   }
 
+  let pbar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
+  if (!parsedArgs['for-tsubaki']) {pbar.start(files.length, 0);}
   for (const file of files) {
-    await extract(file, parsedArgs._[1], parsedArgs['animated-only']);
+    await extract(file, parsedArgs._[1], parsedArgs['new-only'], parsedArgs['animated-only']);
+    if (!parsedArgs['for-tsubaki']) {pbar.increment();}
   }
+  if (!parsedArgs['for-tsubaki']) {pbar.stop();}
   return true;
 }
