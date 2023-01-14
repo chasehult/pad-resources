@@ -15,7 +15,10 @@ function writeFile(out: string, name: string, data: Buffer) {
   fs.writeFileSync(join(out, name), data);
 }
 
-async function extract(name: string, buf: Buffer, out: string, animatedOnly: boolean) {
+async function extract(in_file: string, out: string, animatedOnly: boolean) {
+  const name = basename(in_file, extname(in_file));
+  const buf = fs.readFileSync(in_file);
+
   if (TEX.match(buf) && !animatedOnly) {
     const tex = TEX.load(buf);
     for (const entry of tex.entries) {
@@ -131,28 +134,27 @@ async function convertSpineModel(
 
 export async function main(args: string[]) {
   const parsedArgs = minimist(args, {
-    string: ['out'],
     boolean: ['help', 'animatedOnly']
   });
-  if (parsedArgs._.length === 0 || parsedArgs.help) {
-    console.log(
-      "usage: pad-resources extract [--animated-only] [--out <output directory>] <bin files>...\n" + 
-      "usage: pad-resources extract [--animated-only] [--out <output directory>] <input directory>"
-    );
+
+  if (parsedArgs._.length !== 2 || parsedArgs.help) {
+    console.log("usage: pad-resources extract <bin file> <output directory> [--animated-only]");
     return parsedArgs.help;
   }
 
-  const files: string[] = [];
-  for (const pattern of parsedArgs._) {
-    if (fs.existsSync(pattern) && fs.lstatSync(pattern).isDirectory()) {
-      files.push(...fs.readdirSync(pattern).map((fp) => join(pattern, fp)));
-    } else {
-      files.push(...glob.sync(pattern));
+  const files = [];
+  if (fs.existsSync(parsedArgs._[0]) && fs.lstatSync(parsedArgs._[0]).isDirectory()) {
+    for (const file of fs.readdirSync(parsedArgs._[0])) {
+      if (file.endsWith('.json')) {
+        files.push(path.join(parsedArgs._[0], file));
+      }
     }
+  } else {
+    files.push(...glob.sync(parsedArgs._[0]));
   }
+
   for (const file of files) {
-    const buf = fs.readFileSync(file);
-    await extract(basename(file, extname(file)), buf, parsedArgs.out ?? ".", parsedArgs['animated-only']);
+    await extract(file, parsedArgs._[1], parsedArgs['animated-only']);
   }
   return true;
 }

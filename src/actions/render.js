@@ -4,6 +4,7 @@ const minimist = require('minimist');
 const webgl = require('gl');
 const sharp = require('sharp');
 import { padStart } from 'lodash';
+import { glob } from "glob";
 const { spine } = require('../spine-webgl');
 
 import { spawnSync, spawn } from 'child_process';
@@ -165,7 +166,7 @@ async function render(jsonPath, outDir, renderSingle, forTsubaki) {
     await Promise.all(promises);
     if (!forTsubaki) {pbar.update(Number(duration.toFixed(2))); pbar.stop();}
     
-    console.log("Generating MP4...");
+    console.log("Generating Files...");
     let mp4FFmpegArgs = ['-r', `${FRAME_RATE}`, 
                         '-i', path.join(cacheDir, `${animName}-%0${padding}d.png`), 
                         '-c:v', 'libx264', '-r', `${FRAME_RATE}`, '-pix_fmt', 'yuv420p',
@@ -173,8 +174,6 @@ async function render(jsonPath, outDir, renderSingle, forTsubaki) {
                         path.join(outDir, `${animName}.mp4`)];
     spawnSync('ffmpeg', mp4FFmpegArgs)
     console.log(`${animName}.mp4`);
-    
-    console.log("Generating GIFs...");
     let hqGifFFmpegArgs = ['-i', `${path.join(outDir, `${animName}.mp4`)}`, '-r', '30',
                            '-loglevel', 'error', '-hide_banner', '-y',
                         path.join(outDir, `${animName}_hq.gif`)];    
@@ -209,7 +208,7 @@ export async function main(args) {
       }
     }
   } else {
-    files.push(parsedArgs._[0]);
+    files.push(...glob.sync(parsedArgs._[0]));
   }
 
   for (const file of files) {
