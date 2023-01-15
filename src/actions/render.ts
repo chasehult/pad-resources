@@ -130,9 +130,7 @@ async function render(jsonPath: string, outDir: string, renderSingle: boolean, f
 
 
   let animName = path.basename(jsonPath, path.extname(jsonPath));
-  if (forTsubaki) {
-    animName = padStart(animName.split('_')[1].toString(), 5, '0');
-  }
+  if (forTsubaki) {animName = animName.replace(/^mons_0+/, "");}
 
   if (renderSingle) {
     await renderImg(path.join(outDir, `${animName}.png`));
