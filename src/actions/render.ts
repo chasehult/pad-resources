@@ -31,8 +31,6 @@ async function render(jsonPath: string, outDir: string | undefined, singleDirect
   global.WebGLRenderingContext = gl.constructor;
   spine.PolygonBatcher = class extends spine.PolygonBatcher {
     begin(shader: any) {
-      console.log('shader');
-      console.log(typeof shader);
       super.begin(shader);
       this.__setAdditive();
     }
@@ -192,8 +190,7 @@ async function render(jsonPath: string, outDir: string | undefined, singleDirect
     if (awsPath !== undefined) {
       const s3Args = ['s3', 'mv', '--acl=private', outDir, awsPath, '--recursive', 
                       '--exclude', '*', '--include', `${animName}.mp4`,
-                      '--include', `${animName}.gif`, '--include', `${animName}_hq.gif`]
-      console.log(s3Args)
+                      '--include', `${animName}.gif`, '--include', `${animName}_hq.gif`];
       await spawn('aws', s3Args, {stdio: 'inherit'});
       await fs.closeSync(fs.openSync(path.join(outDir, `${base}.tomb`), 'w'));
     }
