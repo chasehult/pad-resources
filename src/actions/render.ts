@@ -191,7 +191,7 @@ async function render(jsonPath: string, outDir: string | undefined, singleDirect
       const s3Args = ['s3', 'mv', '--acl=private', outDir, awsPath, '--recursive', 
                       '--exclude', '*', '--include', `${animName}.mp4`,
                       '--include', `${animName}.gif`, '--include', `${animName}_hq.gif`];
-      await spawn('aws', s3Args, {stdio: 'inherit'});
+      await spawn('aws', s3Args);
       await fs.closeSync(fs.openSync(path.join(outDir, `${base}.tomb`), 'w'));
     }
   }
