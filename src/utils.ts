@@ -15,7 +15,7 @@ export function mkdir(...parts: string[]) {
 
 export function readASCII(buf: Buffer, offset: number) {
   let str = '';
-  while (buf[offset] !== 0)
+  while (buf[offset] !== 0 && buf[offset] !== undefined)
     str += String.fromCharCode(buf[offset++]);
   return str;
 }
